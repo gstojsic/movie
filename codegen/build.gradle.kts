@@ -15,8 +15,8 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("kotlin-reflect"))
-    implementation(kotlin("kotlin-stdlib-jdk8"))
+    implementation(Libs.kotlin_stdlib)
+    implementation(Libs.kotlin_reflect)
 
     // configuration generator for service providers
     implementation(Libs.google_auto_service)
