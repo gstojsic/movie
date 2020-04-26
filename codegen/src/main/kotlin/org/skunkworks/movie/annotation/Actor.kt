@@ -1,4 +1,4 @@
-package com.skunkworks.movie.annotation
+package org.skunkworks.movie.annotation
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)

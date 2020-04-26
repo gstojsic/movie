@@ -4,21 +4,20 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.actor
 
-class CounterActor private constructor(coroutineScope: CoroutineScope) : CounterMessages {
+class CounterActor private constructor(coroutineScope: CoroutineScope, logger: Logger) : Counter(logger) {
     companion object {
-        fun create(coroutineScope: CoroutineScope): CounterMessages {
-            return CounterActor(coroutineScope)
+        fun create(coroutineScope: CoroutineScope, logger: Logger): Counter {
+            return CounterActor(coroutineScope, logger)
         }
     }
 
-    private val counter = Counter()
     private val actor = coroutineScope.createActor()
 
     private fun CoroutineScope.createActor() = actor<Messages> {
         for (msg in channel) {
             when (msg) {
-                is Messages.Increment -> counter.increment(msg.amount)
-                is Messages.GetCounter -> msg.response.complete(counter.getCount())
+                is Messages.Increment -> super.increment(msg.amount)
+                is Messages.GetCounter -> msg.response.complete(super.getCount())
             }
         }
     }

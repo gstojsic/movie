@@ -5,6 +5,7 @@ plugins {
     id("io.spring.dependency-management") version Ver.spring_dependency_management
     kotlin("jvm") version Ver.kotlin
     kotlin("plugin.spring") version Ver.kotlin
+    kotlin("kapt") version Ver.kotlin
 }
 
 group = "org.skunkworks"
@@ -21,6 +22,9 @@ dependencies {
     implementation(Libs.kotlin_reflect)
     implementation(Libs.kotlin_coroutines)
     implementation(Libs.kotlin_logging)
+
+    implementation(project(":codegen"))
+    kapt(project(":codegen"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

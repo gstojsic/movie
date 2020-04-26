@@ -17,6 +17,7 @@ repositories {
 dependencies {
     implementation(Libs.kotlin_stdlib)
     implementation(Libs.kotlin_reflect)
+    implementation(Libs.kotlin_poet)
 
     // configuration generator for service providers
     implementation(Libs.google_auto_service)

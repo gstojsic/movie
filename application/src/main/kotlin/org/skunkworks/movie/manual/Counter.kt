@@ -1,17 +1,14 @@
 package org.skunkworks.movie.manual
 
-class Counter : CounterMessages {
+open class Counter(private val logger: Logger) {
     private var count = 0;
-    override suspend fun increment(amount: Int) {
+    open suspend fun increment(amount: Int) {
         count += amount
+        logger.log("logging increment: $count")
     }
 
-    override suspend fun getCount(): Int {
+    open suspend fun getCount(): Int {
+        logger.log("logging getCount: $count")
         return count
     }
-}
-
-interface CounterMessages {
-    suspend fun increment(amount: Int)
-    suspend fun getCount(): Int
 }
