@@ -2,6 +2,7 @@ object Ver {
     const val kotlin = "1.3.72"
     const val kotlin_coroutines = "1.3.5"
     const val kotlin_logging = "1.7.9"
+    const val kotlinx_metadata = "0.1.0"
     const val kotlin_poet = "1.5.0"
 
     const val spring_boot = "2.2.6.RELEASE"
@@ -13,6 +14,7 @@ object Ver {
 object Libs {
     const val kotlin_stdlib = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${Ver.kotlin}"
     const val kotlin_reflect = "org.jetbrains.kotlin:kotlin-reflect:${Ver.kotlin}"
+    const val kotlinx_metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:${Ver.kotlinx_metadata}"
 
     const val kotlin_coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Ver.kotlin_coroutines}"
 

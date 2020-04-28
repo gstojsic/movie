@@ -16,7 +16,9 @@ repositories {
 
 dependencies {
     implementation(Libs.kotlin_stdlib)
+    implementation(Libs.kotlin_coroutines)
     implementation(Libs.kotlin_reflect)
+    implementation(Libs.kotlinx_metadata)
     implementation(Libs.kotlin_poet)
 
     // configuration generator for service providers

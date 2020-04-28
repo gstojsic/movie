@@ -1,6 +1,7 @@
 package org.skunkworks.movie.manual
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 
 class LoggerActor private constructor(coroutineScope: CoroutineScope) : Logger() {
@@ -10,9 +11,9 @@ class LoggerActor private constructor(coroutineScope: CoroutineScope) : Logger()
         }
     }
 
-    private val actor = coroutineScope.createActor()
+    private val actor: SendChannel<Messages> = coroutineScope.createActor()
 
-    private fun CoroutineScope.createActor() = actor<Messages> {
+    private fun CoroutineScope.createActor(): SendChannel<Messages> = actor {
         for (msg in channel) {
             when (msg) {
                 is Messages.Log -> super.log(msg.message)

@@ -14,7 +14,7 @@ import org.springframework.boot.runApplication
 class MovieApplication : CommandLineRunner {
     override fun run(vararg args: String?) {
         runBlocking {
-            val t = LoggerGeneratedActor()
+            val t = LoggerGeneratedActor(this)
             val logger = LoggerActor.create(this)
             val counter = CounterActor.create(this, logger)
             counter.increment(2)
