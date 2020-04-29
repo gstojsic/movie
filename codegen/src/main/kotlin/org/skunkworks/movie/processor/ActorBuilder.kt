@@ -2,6 +2,7 @@ package org.skunkworks.movie.processor
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.metadata.*
@@ -103,10 +104,17 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
             params.forEach { p ->
                 overrideFn.addParameter(p.kmData.name, p.typeName)
             }
-            val r = extractName(it.returnType)
             val returnTypeName = getTypeName(it.returnType)
-//            if(it.returnType.)
-//               return
+            if (returnTypeName !== UNIT) {
+                overrideFn.returns(returnTypeName)
+                val completableDeferred = CompletableDeferred::class.asClassName().parameterizedBy(returnTypeName)
+                overrideFn.addStatement("val response = %T()", completableDeferred)
+            }
+            overrideFn.addStatement("actor.send(Messages.${it.name.capitalize()}(${getOverrideParamList(params)}))")
+
+            if (returnTypeName !== UNIT) {
+                overrideFn.addStatement("return response.await()")
+            }
 
             overrideFn.build()
         }
@@ -154,5 +162,8 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
 
     private fun getParamList(params: List<ParameterData>): String {
         return params.joinToString(", ") { "msg.${it.kmData.name}" }
+    }
+    private fun getOverrideParamList(params: List<ParameterData>): String {
+        return params.joinToString(", ") { it.kmData.name }
     }
 }

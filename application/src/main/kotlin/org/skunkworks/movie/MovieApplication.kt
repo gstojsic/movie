@@ -1,9 +1,7 @@
 package org.skunkworks.movie
 
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.skunkworks.movie.generated.LoggerGeneratedActor
 import org.skunkworks.movie.manual.CounterActor
 import org.skunkworks.movie.manual.LoggerActor
 import org.springframework.boot.CommandLineRunner
@@ -14,7 +12,7 @@ import org.springframework.boot.runApplication
 class MovieApplication : CommandLineRunner {
     override fun run(vararg args: String?) {
         runBlocking {
-            val t = LoggerGeneratedActor(this)
+            //val t = LoggerGeneratedActor(this)
             val logger = LoggerActor.create(this)
             val counter = CounterActor.create(this, logger)
             counter.increment(2)
