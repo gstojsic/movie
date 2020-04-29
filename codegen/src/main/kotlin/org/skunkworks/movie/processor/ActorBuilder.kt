@@ -35,11 +35,12 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                     val messageType = TypeSpec.classBuilder(it.name.capitalize())
                             .superclass(messagesClassName)
 
+                    val messageConstructor = FunSpec.constructorBuilder()
+                    val returnTypeName = getTypeName(it.returnType)
                     val params = it.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
                     if (params.isNotEmpty()) {
-                        val messageConstructor = params.fold(FunSpec.constructorBuilder()) { c, p ->
-                            c.addParameter(ParameterSpec(p.kmData.name, p.typeName))
-                            c
+                        params.forEach { p ->
+                            messageConstructor.addParameter(ParameterSpec(p.kmData.name, p.typeName))
                         }
                         val messageProperties = params.fold(mutableListOf<PropertySpec>()) { l, p ->
                             l.add(PropertySpec.builder(p.kmData.name, p.typeName)
@@ -48,9 +49,16 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                             l
                         }
 
-                        messageType.primaryConstructor(messageConstructor.build())
-                                .addProperties(messageProperties)
+                        messageType.addProperties(messageProperties)
                     }
+                    if (returnTypeName !== UNIT) {
+                        val completableDeferred = CompletableDeferred::class.asClassName().parameterizedBy(returnTypeName)
+                        messageConstructor.addParameter("response", completableDeferred)
+                        messageType.addProperty(PropertySpec.builder("response", completableDeferred)
+                                .initializer("response")
+                                .build())
+                    }
+                    messageType.primaryConstructor(messageConstructor.build())
                     messagesType.addType(messageType.build())
                 }
 
@@ -67,7 +75,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
 
                 val createActorFun = FunSpec.builder("createActor")
                         .addModifiers(KModifier.PRIVATE)
-                        .receiver(Companion.coroutineScope)
+                        .receiver(coroutineScope)
                         .returns(sendChannel)
                         .addCode(createActorBody(messages), actorStatement)
 
@@ -106,8 +114,16 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                 val completableDeferred = CompletableDeferred::class.asClassName().parameterizedBy(returnTypeName)
                 overrideFn.addStatement("val response = %T()", completableDeferred)
             }
-            overrideFn.addStatement("actor.send(Messages.${it.name.capitalize()}(${getOverrideParamList(params)}))")
+            val invokeParams = params.map { pd -> pd.kmData.name }
 
+            val allParams = if (returnTypeName !== UNIT)
+                invokeParams + "response"
+            else
+                invokeParams
+
+            val allParamsStr = allParams.joinToString(", ")
+            overrideFn.addStatement("actor.send(Messages.${it.name.capitalize()}($allParamsStr))")
+val fuckoff = "fuckoffGradle"
             if (returnTypeName !== UNIT) {
                 overrideFn.addStatement("return response.await()")
             }
@@ -141,8 +157,13 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
             val method = m.name
             val cls = method.capitalize()
             val params = m.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
+            val returnTypeName = getTypeName(m.returnType)
             cb.indent()
-            cb.addStatement("is Messages.$cls  -> super.$method(${getParamList(params)})")
+            if (returnTypeName !== UNIT) {
+                cb.addStatement("is Messages.$cls  -> msg.response.complete(super.$method(${getParamList(params)}))")
+            } else {
+                cb.addStatement("is Messages.$cls  -> super.$method(${getParamList(params)})")
+            }
             cb
         }
 
@@ -158,9 +179,6 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
 
     private fun getParamList(params: List<ParameterData>): String {
         return params.joinToString(", ") { "msg.${it.kmData.name}" }
-    }
-    private fun getOverrideParamList(params: List<ParameterData>): String {
-        return params.joinToString(", ") { it.kmData.name }
     }
 
     companion object {
