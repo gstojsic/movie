@@ -2,6 +2,7 @@ package org.skunkworks.movie.processor
 
 import com.google.auto.service.AutoService
 import org.skunkworks.movie.annotation.Actor
+import org.skunkworks.movie.annotation.Movie
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
@@ -21,7 +22,12 @@ internal class MovieProcessor : AbstractProcessor() {
         val actorElements = roundEnv.getElementsAnnotatedWith(Actor::class.java)
         if (actorElements.isEmpty()) return false
 
-        ActorBuilder(roundEnv, processingEnv).generateActors(actorElements)
+        ActorBuilder(processingEnv).generateActors(actorElements)
+
+        val configElements = roundEnv.getElementsAnnotatedWith(Movie::class.java)
+        if (configElements.isEmpty()) return false
+
+        ConfigurationBuilder(processingEnv).generateConfig(configElements, actorElements)
         return true
     }
 }

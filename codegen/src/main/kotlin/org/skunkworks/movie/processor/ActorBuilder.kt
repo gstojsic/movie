@@ -7,14 +7,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.metadata.*
 import javax.annotation.processing.ProcessingEnvironment
-import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 import com.squareup.kotlinpoet.ClassName as KotlinpoetClassName
 
-internal class ActorBuilder(private val roundEnv: RoundEnvironment,
-                            private val processingEnv: ProcessingEnvironment) {
-
-    private val coroutineScope = processingEnv.getTypeElement(CoroutineScope::class.java.typeName).asType()
+internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
 
     internal fun generateActors(actors: MutableSet<out Element>) {
         try {
@@ -59,7 +55,7 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
                 }
 
                 val actorConstructor = FunSpec.constructorBuilder()
-                        .addParameter("coroutineScope", coroutineScope.asTypeName())
+                        .addParameter("coroutineScope", Companion.coroutineScope)
 
                 val sendChannel = SendChannel::class.asClassName().parameterizedBy(messagesClassName)
                 val actorStatement = MemberName("kotlinx.coroutines.channels", "actor")
@@ -71,7 +67,7 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
 
                 val createActorFun = FunSpec.builder("createActor")
                         .addModifiers(KModifier.PRIVATE)
-                        .receiver(coroutineScope.asTypeName())
+                        .receiver(Companion.coroutineScope)
                         .returns(sendChannel)
                         .addCode(createActorBody(messages), actorStatement)
 
@@ -91,7 +87,7 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
                 file.writeTo(processingEnv.filer)
             }
         } catch (e: Exception) {
-            processingEnv.error("Error in generateActors", e)
+            processingEnv.printMessage("Error in generateActors", e)
         }
     }
 
@@ -127,7 +123,7 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
 
     private fun getTypeName(type: KmType?): TypeName {
         if (type === null) {
-            processingEnv.error("classifier is null")
+            processingEnv.printMessage("classifier is null")
             throw NullPointerException("classifier is null")
         }
         val typeName = extractName(type)
@@ -165,5 +161,9 @@ internal class ActorBuilder(private val roundEnv: RoundEnvironment,
     }
     private fun getOverrideParamList(params: List<ParameterData>): String {
         return params.joinToString(", ") { it.kmData.name }
+    }
+
+    companion object {
+        private val coroutineScope = CoroutineScope::class.asTypeName()
     }
 }

@@ -47,13 +47,17 @@ fun KmFunction.isOpen() = Flag.IS_OPEN(this.flags)
 
 fun KmFunction.isPublic() = Flag.IS_PUBLIC(this.flags)
 
-fun ProcessingEnvironment.error(message: String, e: Exception? = null) {
+fun ProcessingEnvironment.printMessage(
+        message: String,
+        e: Exception? = null,
+        kind:Diagnostic.Kind = Diagnostic.Kind.ERROR
+) {
     val exceptionAsString = if (e !== null) {
         val sw = StringWriter()
         e.printStackTrace(PrintWriter(sw))
         sw.toString()
     } else ""
-    this.messager.printMessage(Diagnostic.Kind.ERROR, "$message $exceptionAsString")
+    this.messager.printMessage(kind, "$message $exceptionAsString")
 }
 
 fun ProcessingEnvironment.typenameFromClassifier(classifier: String): TypeName {
