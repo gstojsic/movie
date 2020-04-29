@@ -6,6 +6,8 @@ import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmFunction
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import java.io.PrintWriter
+import java.io.StringWriter
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -41,7 +43,18 @@ fun getClassMetadata(element: Element): KmClass? {
 
 fun KmFunction.isSuspendable() = Flag.Function.IS_SUSPEND(this.flags)
 
-fun ProcessingEnvironment.error(message: String) = this.messager.printMessage(Diagnostic.Kind.ERROR, message)
+fun KmFunction.isOpen() = Flag.IS_OPEN(this.flags)
+
+fun KmFunction.isPublic() = Flag.IS_PUBLIC(this.flags)
+
+fun ProcessingEnvironment.error(message: String, e: Exception? = null) {
+    val exceptionAsString = if (e !== null) {
+        val sw = StringWriter()
+        e.printStackTrace(PrintWriter(sw))
+        sw.toString()
+    } else ""
+    this.messager.printMessage(Diagnostic.Kind.ERROR, "$message $exceptionAsString")
+}
 
 fun ProcessingEnvironment.typenameFromClassifier(classifier: String): TypeName {
     return when (classifier) {
