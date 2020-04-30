@@ -15,7 +15,8 @@ class MovieApplication : CommandLineRunner {
 
     override fun run(vararg args: String?) {
         runBlocking {
-            counter.increment(2)
+            log.info { "start" }
+            counter.increment()
             counter.increment(5)
             val inc = counter.incrementAndGet(7)
             log.info { "inc: $inc" }

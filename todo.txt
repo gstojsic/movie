@@ -2,4 +2,4 @@
 -can't pass lambdas as arguments to messages(which is good maybe)
 -executor is not configurable
 -constructor must be empty - it is not mirrored from actor
--default params in methods/messages
+-default params in methods/messages - seems to work out of box
