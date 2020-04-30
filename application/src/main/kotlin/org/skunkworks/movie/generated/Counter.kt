@@ -9,7 +9,7 @@ open class Counter {
     private lateinit var logger: Logger
 
     private var count = 0;
-    open suspend fun increment(amount: Int) {
+    open suspend fun increment(amount: Int = 0) {
         count += amount
         logger.log("logging increment: $count")
     }
