@@ -85,17 +85,17 @@ fun ProcessingEnvironment.typenameFromClassifier(classifier: String): ClassName 
         "kotlin/Annotation" -> ANNOTATION
         "kotlin/Nothing" -> NOTHING
         "kotlin/Number" -> NUMBER
-        "kotlin/Iterable" -> ITERABLE
-        "kotlin/Collection" -> COLLECTION
+        "kotlin/collections/Iterable" -> ITERABLE
+        "kotlin/collections/Collection" -> COLLECTION
         "kotlin/collections/List" -> LIST
-        "kotlin/Set" -> SET
-        "kotlin/Map" -> MAP
+        "kotlin/collections/Set" -> SET
+        "kotlin/collections/Map" -> MAP
         //"kotlin/" -> MAP_ENTRY = MAP.nestedClass("Entry")
-        "kotlin/MutableIterable" -> MUTABLE_ITERABLE
-        "kotlin/MutableCollection" -> MUTABLE_COLLECTION
-        "kotlin/MutableList" -> MUTABLE_LIST
-        "kotlin/MutableSet" -> MUTABLE_SET
-        "kotlin/MutableMap" -> MUTABLE_MAP
+        "kotlin/collections/MutableIterable" -> MUTABLE_ITERABLE
+        "kotlin/collections/MutableCollection" -> MUTABLE_COLLECTION
+        "kotlin/collections/MutableList" -> MUTABLE_LIST
+        "kotlin/collections/MutableSet" -> MUTABLE_SET
+        "kotlin/collections/MutableMap" -> MUTABLE_MAP
         //"kotlin/" -> MUTABLE_MAP_ENTRY = MUTABLE_MAP.nestedClass("Entry")
         "kotlin/BooleanArray" -> BOOLEAN_ARRAY
         "kotlin/ByteArray" -> BYTE_ARRAY
