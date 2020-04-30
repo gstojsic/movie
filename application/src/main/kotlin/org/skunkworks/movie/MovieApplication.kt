@@ -12,10 +12,14 @@ import org.springframework.boot.runApplication
 class MovieApplication : CommandLineRunner {
     @Autowired
     private lateinit var counter: Counter
+
     override fun run(vararg args: String?) {
         runBlocking {
             counter.increment(2)
             counter.increment(5)
+            val inc = counter.incrementAndGet(7)
+            log.info { "inc: $inc" }
+
             val count = counter.getCount()
             log.info { "counter: $count" }
 

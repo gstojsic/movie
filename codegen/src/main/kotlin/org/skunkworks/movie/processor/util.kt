@@ -20,7 +20,12 @@ fun ProcessingEnvironment.getTypeElement(t: TypeMirror): TypeElement {
 }
 
 fun ProcessingEnvironment.getTypeElement(type: String): TypeElement {
-    return this.elementUtils.getTypeElement(type)
+    try {
+        return this.elementUtils.getTypeElement(type)
+    } catch (e: Exception) {
+        this.printMessage("failed to recognize type:$type\n")
+        throw e
+    }
 }
 
 fun getClassMetadata(element: Element): KmClass? {
@@ -60,7 +65,7 @@ fun ProcessingEnvironment.printMessage(
     this.messager.printMessage(kind, "$message $exceptionAsString")
 }
 
-fun ProcessingEnvironment.typenameFromClassifier(classifier: String): TypeName {
+fun ProcessingEnvironment.typenameFromClassifier(classifier: String): ClassName {
     return when (classifier) {
         "kotlin/Any" -> ANY
         "kotlin/Array" -> ARRAY
@@ -82,7 +87,7 @@ fun ProcessingEnvironment.typenameFromClassifier(classifier: String): TypeName {
         "kotlin/Number" -> NUMBER
         "kotlin/Iterable" -> ITERABLE
         "kotlin/Collection" -> COLLECTION
-        "kotlin/List" -> LIST
+        "kotlin/collections/List" -> LIST
         "kotlin/Set" -> SET
         "kotlin/Map" -> MAP
         //"kotlin/" -> MAP_ENTRY = MAP.nestedClass("Entry")

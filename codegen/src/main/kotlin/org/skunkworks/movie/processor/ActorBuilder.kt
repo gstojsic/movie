@@ -36,7 +36,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                             .superclass(messagesClassName)
 
                     val messageConstructor = FunSpec.constructorBuilder()
-                    val returnTypeName = getTypeName(it.returnType)
+                    val returnTypeName = getTypeNameFromKmType(it.returnType)
                     val params = it.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
                     if (params.isNotEmpty()) {
                         params.forEach { p ->
@@ -108,7 +108,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
             params.forEach { p ->
                 overrideFn.addParameter(p.kmData.name, p.typeName)
             }
-            val returnTypeName = getTypeName(it.returnType)
+            val returnTypeName = getTypeNameFromKmType(it.returnType)
             if (returnTypeName !== UNIT) {
                 overrideFn.returns(returnTypeName)
                 val completableDeferred = CompletableDeferred::class.asClassName().parameterizedBy(returnTypeName)
@@ -123,7 +123,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
 
             val allParamsStr = allParams.joinToString(", ")
             overrideFn.addStatement("actor.send(Messages.${it.name.capitalize()}($allParamsStr))")
-val fuckoff = "fuckoffGradle"
+
             if (returnTypeName !== UNIT) {
                 overrideFn.addStatement("return response.await()")
             }
@@ -133,11 +133,23 @@ val fuckoff = "fuckoffGradle"
     }
 
     private fun getTypeNameFromParameter(p: KmValueParameter): TypeName {
-        val type: KmType? = p.type
-        return getTypeName(type)
+        return getTypeNameFromKmType(p.type)
     }
 
-    private fun getTypeName(type: KmType?): TypeName {
+    private fun getTypeNameFromKmType(type: KmType?): TypeName {
+        if (type === null) throw IllegalArgumentException("parameter type")
+        return if (type.arguments.isNullOrEmpty()) {
+            getTypeName(type)
+        } else {
+            getTypeName(type).parameterizedBy(getTypeParameters(type.arguments))
+        }
+    }
+
+    private fun getTypeParameters(arguments: MutableList<KmTypeProjection>): List<TypeName> {
+        return arguments.map { getTypeNameFromKmType(it.type) }
+    }
+
+    private fun getTypeName(type: KmType?): KotlinpoetClassName {
         if (type === null) {
             processingEnv.printMessage("classifier is null")
             throw NullPointerException("classifier is null")
@@ -153,16 +165,16 @@ val fuckoff = "fuckoffGradle"
     }
 
     private fun createActorBody(messages: List<KmFunction>): String {
-        val actorWhen = messages.fold(CodeBlock.builder()) { cb, m ->
+        val actorWhen = messages.fold(CodeBlock.builder().indent().indent().indent()) { cb, m ->
             val method = m.name
             val cls = method.capitalize()
             val params = m.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
             val returnTypeName = getTypeName(m.returnType)
-            cb.indent()
+
             if (returnTypeName !== UNIT) {
-                cb.addStatement("is Messages.$cls  -> msg.response.complete(super.$method(${getParamList(params)}))")
+                cb.addStatement("is Messages.$cls -> msg.response.complete(super.$method(${getParamList(params)}))")
             } else {
-                cb.addStatement("is Messages.$cls  -> super.$method(${getParamList(params)})")
+                cb.addStatement("is Messages.$cls -> super.$method(${getParamList(params)})")
             }
             cb
         }

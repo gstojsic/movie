@@ -6,7 +6,7 @@ import java.sql.Date
 
 private val logger = KotlinLogging.logger {}
 
-//@Actor
+@Actor
 open class Logger {
     open suspend fun blog(message: String, bla: Int, truc: Date) {
         logger.info { "message: $message" }
