@@ -1,4 +1,4 @@
--the processor does not find messages of the Actor class inherits from a class
+-the processor does not find messages of the Actor class if the class inherits from another class
 -can't pass lambdas as arguments to messages(which is good maybe)
 -executor is not configurable
 -constructor must be empty - it is not mirrored from actor
