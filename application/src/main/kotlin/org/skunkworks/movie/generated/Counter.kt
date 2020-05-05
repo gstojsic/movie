@@ -1,12 +1,9 @@
 package org.skunkworks.movie.generated
 
 import org.skunkworks.movie.annotation.Actor
-import org.springframework.beans.factory.annotation.Autowired
 
-@Actor
-open class Counter {
-    @Autowired
-    private lateinit var logger: Logger
+@Actor(factory = true)
+open class Counter(private val logger: Logger) {
 
     private var count = 0;
     open suspend fun increment(amount: Int = 0) {

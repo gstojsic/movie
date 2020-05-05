@@ -1,9 +1,7 @@
 package org.skunkworks.movie.processor
 
 import com.squareup.kotlinpoet.*
-import kotlinx.metadata.Flag
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmFunction
+import kotlinx.metadata.*
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import java.io.PrintWriter
@@ -14,6 +12,8 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
+
+import com.squareup.kotlinpoet.ClassName as KotlinpoetClassName
 
 fun ProcessingEnvironment.getTypeElement(t: TypeMirror): TypeElement {
     return this.typeUtils.asElement(t) as TypeElement
@@ -52,6 +52,8 @@ fun KmFunction.isOpen() = Flag.IS_OPEN(this.flags)
 
 fun KmFunction.isPublic() = Flag.IS_PUBLIC(this.flags)
 
+fun KmConstructor.isPrimary() = Flag.Constructor.IS_PRIMARY(this.flags)
+
 fun ProcessingEnvironment.printMessage(
         message: String,
         e: Exception? = null,
@@ -65,7 +67,23 @@ fun ProcessingEnvironment.printMessage(
     this.messager.printMessage(kind, "$message $exceptionAsString")
 }
 
-fun ProcessingEnvironment.typenameFromClassifier(classifier: String): ClassName {
+fun ProcessingEnvironment.getClassName(type: KmType?): KotlinpoetClassName {
+    if (type === null) {
+        this.printMessage("classifier is null")
+        throw NullPointerException("classifier is null")
+    }
+    val typeName = extractName(type)
+    return this.classNameFromClassifier(typeName)
+}
+
+fun extractName(type: KmType): ClassName = when (val classifier = type.classifier) {
+    is KmClassifier.Class -> classifier.name
+    is KmClassifier.TypeParameter -> TODO()
+    is KmClassifier.TypeAlias -> TODO()
+}
+
+
+fun ProcessingEnvironment.classNameFromClassifier(classifier: String): KotlinpoetClassName {
     return when (classifier) {
         "kotlin/Any" -> ANY
         "kotlin/Array" -> ARRAY

@@ -62,8 +62,11 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                     messagesType.addType(messageType.build())
                 }
 
+                val constructor = classMetadata.constructors.first { it.isPrimary() }
                 val actorConstructor = FunSpec.constructorBuilder()
-                        .addParameter("coroutineScope", Companion.coroutineScope)
+                        .addParameter("coroutineScope", coroutineScope)
+                constructor.valueParameters.forEach { actorConstructor.addParameter(it.name, processingEnv.getClassName(it.type)) }
+                val superclassConstructorParams = constructor.valueParameters.joinToString(", ") { it.name }
 
                 val sendChannel = SendChannel::class.asClassName().parameterizedBy(messagesClassName)
                 val actorStatement = MemberName("kotlinx.coroutines.channels", "actor")
@@ -83,6 +86,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
 
                 val actorType = TypeSpec.classBuilder(className)
                         .superclass(e.asType().asTypeName())
+                        .addSuperclassConstructorParameter(superclassConstructorParams)
                         .primaryConstructor(actorConstructor.build())
                         .addProperty(actorProperty)
                         .addFunction(createActorFun.build())
@@ -139,9 +143,9 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
     private fun getTypeNameFromKmType(type: KmType?): TypeName {
         if (type === null) throw IllegalArgumentException("parameter type")
         return if (type.arguments.isNullOrEmpty()) {
-            getTypeName(type)
+            processingEnv.getClassName(type)
         } else {
-            getTypeName(type).parameterizedBy(getTypeParameters(type.arguments))
+            processingEnv.getClassName(type).parameterizedBy(getTypeParameters(type.arguments))
         }
     }
 
@@ -149,27 +153,12 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
         return arguments.map { getTypeNameFromKmType(it.type) }
     }
 
-    private fun getTypeName(type: KmType?): KotlinpoetClassName {
-        if (type === null) {
-            processingEnv.printMessage("classifier is null")
-            throw NullPointerException("classifier is null")
-        }
-        val typeName = extractName(type)
-        return processingEnv.typenameFromClassifier(typeName)
-    }
-
-    private fun extractName(type: KmType): ClassName = when (val classifier = type.classifier) {
-        is KmClassifier.Class -> classifier.name
-        is KmClassifier.TypeParameter -> TODO()
-        is KmClassifier.TypeAlias -> TODO()
-    }
-
     private fun createActorBody(messages: List<KmFunction>): String {
         val actorWhen = messages.fold(CodeBlock.builder().indent().indent().indent()) { cb, m ->
             val method = m.name
             val cls = method.capitalize()
             val params = m.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
-            val returnTypeName = getTypeName(m.returnType)
+            val returnTypeName = processingEnv.getClassName(m.returnType)
 
             if (returnTypeName !== UNIT) {
                 cb.addStatement("is Messages.$cls -> msg.response.complete(super.$method(${getParamList(params)}))")

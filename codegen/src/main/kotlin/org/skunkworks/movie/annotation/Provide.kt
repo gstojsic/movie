@@ -1,6 +1,6 @@
 package org.skunkworks.movie.annotation
 
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.SOURCE)
 @MustBeDocumented
-annotation class Actor(val factory: Boolean = false)
+annotation class Provide
