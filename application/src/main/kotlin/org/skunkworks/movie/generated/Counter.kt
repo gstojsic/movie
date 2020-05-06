@@ -1,9 +1,13 @@
 package org.skunkworks.movie.generated
 
 import org.skunkworks.movie.annotation.Actor
+import org.skunkworks.movie.annotation.Provide
 
 @Actor(factory = true)
-open class Counter(private val logger: Logger) {
+open class Counter(
+        @Provide key: String,
+        private val logger: Logger
+) {
 
     private var count = 0;
     open suspend fun increment(amount: Int = 0) {

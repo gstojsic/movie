@@ -3,10 +3,13 @@ package org.skunkworks.movie.processor
 import com.squareup.kotlinpoet.*
 import kotlinx.coroutines.CoroutineScope
 import org.skunkworks.movie.annotation.Actor
+import org.skunkworks.movie.annotation.Provide
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
+import javax.lang.model.element.ElementKind
+import javax.lang.model.element.ExecutableElement
 
 class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
 
@@ -26,8 +29,6 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
             val className = "Cast"
             val pack = processingEnv.elementUtils.getPackageOf(configElement).toString()
 
-            val beanClassName = ClassName("org.springframework.context.annotation", "Bean")
-            val beanAnnotation = AnnotationSpec.builder(beanClassName).build()
             val executors = Executors::class.asClassName()
             val executorBean = FunSpec.builder("executor")
                     .addAnnotation(beanAnnotation)
@@ -49,18 +50,66 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
                 val generatedActorPackage = processingEnv.elementUtils.getPackageOf(it)
                 val generatedActorType = ClassName(generatedActorPackage.toString(), "${name}GeneratedActor")
                 val classMetadata = getClassMetadata(it)
+                if (classMetadata === null)
+                    return@forEach processingEnv.printMessage("classMetadata is null for $it")
 
                 if (actorAnnotation.factory) {
                     //create factory
                     val factoryName = "${name}Factory"
-                    val factoryType = TypeSpec.classBuilder(factoryName)
+                    val factoryClassName = ClassName(generatedActorPackage.toString(), factoryName)
+                    val factoryType = TypeSpec.classBuilder(factoryClassName)
+
+                    val constructor = it.enclosedElements
+                            .filter { t -> t.kind == ElementKind.CONSTRUCTOR }
+                            .map { e -> e as ExecutableElement }
+                            .maxBy { e -> e.parameters.size }
+                    if (constructor === null)
+                        return@forEach processingEnv.printMessage("constructor not found for $it")
+
+                    val (provided, injected) = constructor.parameters
+                            .partition { p ->
+                                p.getAnnotation(Provide::class.java) !== null
+                            }
+
+                    val executorProperty = PropertySpec.builder("executor", ExecutorService::class.asTypeName())
+                            .mutable(true)
+                            .addModifiers(KModifier.LATEINIT, KModifier.PRIVATE)
+                            .addAnnotation(autowiredAnnotation)
+                            .build()
+
+                    factoryType.addProperty(executorProperty)
+                    if (injected.isNotEmpty()) {
+                        injected.forEach { i ->
+                            val property = PropertySpec.builder(i.simpleName.toString(), i.asType().asTypeName())
+                                    .mutable(true)
+                                    .addModifiers(KModifier.LATEINIT, KModifier.PRIVATE)
+                                    .addAnnotation(autowiredAnnotation)
+                                    .build()
+                            factoryType.addProperty(property)
+                        }
+                    }
+
+                    val factoryMethod = FunSpec.builder("create")
+                            .returns(it.asType().asTypeName())
+                            .addStatement("return %T(%T(executor.%T()))", generatedActorType, coroutineScope, asCoroutineDispatcher)
+
+                    factoryType.addFunction(factoryMethod.build())
 
                     val factoryFile = FileSpec.builder(generatedActorPackage.toString(), factoryName)
                             .addType(factoryType.build())
                             .build()
                     factoryFile.writeTo(processingEnv.filer)
+
+                    val actorFactoryBean = FunSpec.builder(factoryName.decapitalize())
+                            .addAnnotation(beanAnnotation)
+                            .addModifiers(KModifier.OPEN)
+                            .returns(factoryClassName)
+                            .addStatement("return %T()", factoryClassName)
+                            .build()
+
+                    configurationType.addFunction(actorFactoryBean)
                 } else {
-                    val (beanParams, generatedTypeParams) = if (classMetadata !== null) {
+                    val (beanParams, generatedTypeParams) = run {
                         val constructor = classMetadata.constructors.first { c -> c.isPrimary() }
                         val valueParameters = constructor.valueParameters
                         val beanParams = valueParameters
@@ -69,8 +118,6 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
                             valueParameters.joinToString(", ", ", ") { vp -> vp.name }
                         else ""
                         beanParams to generatedTypeParams
-                    } else {
-                        emptyList<ParameterSpec>() to ""
                     }
 
                     val actorBean = FunSpec.builder(name.decapitalize())
@@ -97,6 +144,11 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
 
     companion object {
         private val coroutineScope = CoroutineScope::class.asTypeName()
+        private val beanClassName = ClassName("org.springframework.context.annotation", "Bean")
+        private val beanAnnotation = AnnotationSpec.builder(beanClassName).build()
+        private val autowiredClassName = ClassName("org.springframework.beans.factory.annotation", "Autowired")
+        private val autowiredAnnotation = AnnotationSpec.builder(autowiredClassName).build()
+
         private val asCoroutineDispatcher = ClassName("kotlinx.coroutines", "asCoroutineDispatcher")
     }
 }
