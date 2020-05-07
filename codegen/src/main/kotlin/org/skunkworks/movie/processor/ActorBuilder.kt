@@ -5,7 +5,8 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.metadata.*
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmValueParameter
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
 import com.squareup.kotlinpoet.ClassName as KotlinpoetClassName

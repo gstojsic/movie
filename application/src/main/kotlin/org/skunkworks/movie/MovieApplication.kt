@@ -2,7 +2,6 @@ package org.skunkworks.movie
 
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.skunkworks.movie.generated.CounterFactory
 import org.skunkworks.movie.generated.CounterManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
