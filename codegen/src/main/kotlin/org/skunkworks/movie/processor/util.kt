@@ -1,6 +1,7 @@
 package org.skunkworks.movie.processor
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import kotlinx.metadata.*
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
@@ -57,7 +58,7 @@ fun KmConstructor.isPrimary() = Flag.Constructor.IS_PRIMARY(this.flags)
 fun ProcessingEnvironment.printMessage(
         message: String,
         e: Exception? = null,
-        kind:Diagnostic.Kind = Diagnostic.Kind.ERROR
+        kind: Diagnostic.Kind = Diagnostic.Kind.ERROR
 ) {
     val exceptionAsString = if (e !== null) {
         val sw = StringWriter()
@@ -67,23 +68,35 @@ fun ProcessingEnvironment.printMessage(
     this.messager.printMessage(kind, "$message $exceptionAsString")
 }
 
+fun ProcessingEnvironment.getTypeNameFromKmType(type: KmType?): TypeName {
+    if (type === null) throw IllegalArgumentException("parameter type")
+    return if (type.arguments.isNullOrEmpty()) {
+        this.getClassName(type)
+    } else {
+        this.getClassName(type).parameterizedBy(getTypeParameters(type.arguments))
+    }
+}
+
+fun ProcessingEnvironment.getTypeParameters(arguments: MutableList<KmTypeProjection>): List<TypeName> {
+    return arguments.map { getTypeNameFromKmType(it.type) }
+}
+
 fun ProcessingEnvironment.getClassName(type: KmType?): KotlinpoetClassName {
     if (type === null) {
         this.printMessage("classifier is null")
         throw NullPointerException("classifier is null")
     }
     val typeName = extractName(type)
-    return this.classNameFromClassifier(typeName)
+    return classNameFromClassifier(typeName)
 }
 
 fun extractName(type: KmType): ClassName = when (val classifier = type.classifier) {
     is KmClassifier.Class -> classifier.name
     is KmClassifier.TypeParameter -> TODO()
-    is KmClassifier.TypeAlias -> TODO()
+    is KmClassifier.TypeAlias -> classifier.name
 }
 
-
-fun ProcessingEnvironment.classNameFromClassifier(classifier: String): KotlinpoetClassName {
+fun classNameFromClassifier(classifier: String): KotlinpoetClassName {
     return when (classifier) {
         "kotlin/Any" -> ANY
         "kotlin/Array" -> ARRAY
@@ -132,6 +145,6 @@ fun ProcessingEnvironment.classNameFromClassifier(classifier: String): Kotlinpoe
         "kotlin/UShortArray" -> U_SHORT_ARRAY
         "kotlin/UIntArray" -> U_INT_ARRAY
         "kotlin/ULongArray" -> U_LONG_ARRAY
-        else -> this.getTypeElement(classifier.replace('/', '.')).asClassName()
+        else -> KotlinpoetClassName.bestGuess(classifier.replace('/', '.'))
     }
 }

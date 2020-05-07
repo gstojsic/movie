@@ -5,7 +5,7 @@ import org.skunkworks.movie.annotation.Provide
 
 @Actor(factory = true)
 open class Counter(
-        @Provide key: String,
+        @Provide private val key: Int,
         private val logger: Logger
 ) {
 

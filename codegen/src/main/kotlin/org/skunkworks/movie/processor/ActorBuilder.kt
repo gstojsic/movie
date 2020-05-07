@@ -36,7 +36,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
                             .superclass(messagesClassName)
 
                     val messageConstructor = FunSpec.constructorBuilder()
-                    val returnTypeName = getTypeNameFromKmType(it.returnType)
+                    val returnTypeName = processingEnv.getTypeNameFromKmType(it.returnType)
                     val params = it.valueParameters.map { p -> ParameterData(p, getTypeNameFromParameter(p)) }
                     if (params.isNotEmpty()) {
                         params.forEach { p ->
@@ -112,7 +112,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
             params.forEach { p ->
                 overrideFn.addParameter(p.kmData.name, p.typeName)
             }
-            val returnTypeName = getTypeNameFromKmType(it.returnType)
+            val returnTypeName = processingEnv.getTypeNameFromKmType(it.returnType)
             if (returnTypeName !== UNIT) {
                 overrideFn.returns(returnTypeName)
                 val completableDeferred = CompletableDeferred::class.asClassName().parameterizedBy(returnTypeName)
@@ -137,20 +137,7 @@ internal class ActorBuilder(private val processingEnv: ProcessingEnvironment) {
     }
 
     private fun getTypeNameFromParameter(p: KmValueParameter): TypeName {
-        return getTypeNameFromKmType(p.type)
-    }
-
-    private fun getTypeNameFromKmType(type: KmType?): TypeName {
-        if (type === null) throw IllegalArgumentException("parameter type")
-        return if (type.arguments.isNullOrEmpty()) {
-            processingEnv.getClassName(type)
-        } else {
-            processingEnv.getClassName(type).parameterizedBy(getTypeParameters(type.arguments))
-        }
-    }
-
-    private fun getTypeParameters(arguments: MutableList<KmTypeProjection>): List<TypeName> {
-        return arguments.map { getTypeNameFromKmType(it.type) }
+        return processingEnv.getTypeNameFromKmType(p.type)
     }
 
     private fun createActorBody(messages: List<KmFunction>): String {

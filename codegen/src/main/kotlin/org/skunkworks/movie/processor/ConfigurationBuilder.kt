@@ -66,10 +66,9 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
                     if (constructor === null)
                         return@forEach processingEnv.printMessage("constructor not found for $it")
 
-                    val (provided, injected) = constructor.parameters
-                            .partition { p ->
-                                p.getAnnotation(Provide::class.java) !== null
-                            }
+                    val constructorParams = constructor.parameters
+                    val (provided, injected) = constructorParams
+                            .partition { p -> p.getAnnotation(Provide::class.java) !== null }
 
                     val executorProperty = PropertySpec.builder("executor", ExecutorService::class.asTypeName())
                             .mutable(true)
@@ -88,10 +87,21 @@ class ConfigurationBuilder(private val processingEnv: ProcessingEnvironment) {
                             factoryType.addProperty(property)
                         }
                     }
+                    val kotlinConstructor = classMetadata.constructors.first { c -> c.isPrimary() }
+                    val providedNames = provided.map { p -> p.simpleName.toString() }.toSet()
+                    val kotlinProvided = kotlinConstructor.valueParameters.filter { vp -> providedNames.contains(vp.name) }
+                    val createParameters = kotlinProvided.map { p ->
+                        ParameterSpec.builder(p.name, processingEnv.getTypeNameFromKmType(p.type)).build()
+                    }
+
+                    val actorConstructorParams = if (constructorParams.isNotEmpty())
+                        constructorParams.joinToString(", ", ", ") { p -> p.simpleName.toString() }
+                    else ""
 
                     val factoryMethod = FunSpec.builder("create")
+                            .addParameters(createParameters)
                             .returns(it.asType().asTypeName())
-                            .addStatement("return %T(%T(executor.%T()))", generatedActorType, coroutineScope, asCoroutineDispatcher)
+                            .addStatement("return %T(%T(executor.%T())$actorConstructorParams)", generatedActorType, coroutineScope, asCoroutineDispatcher)
 
                     factoryType.addFunction(factoryMethod.build())
 
